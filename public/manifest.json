@@ -1,0 +1,4 @@
+{"name":"DropBridge","short_name":"DropBridge","start_url":"/","display":"standalone","background_color":"#1c1e22","theme_color":"#1c1e22",
+"icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}],
+"share_target":{"action":"/share","method":"POST","enctype":"multipart/form-data",
+"params":{"title":"title","text":"text","url":"url","files":[{"name":"files","accept":["image/*","video/*","audio/*","text/*","application/*"]}]}}}

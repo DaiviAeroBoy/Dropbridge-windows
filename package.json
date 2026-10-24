@@ -1,0 +1,17 @@
+{
+  "name": "dropbridge",
+  "version": "1.0.0",
+  "description": "Share links, files, photos and videos between PC and phone",
+  "author": "DropBridge",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win --publish never" },
+  "devDependencies": { "electron": "^31.7.7", "electron-builder": "^24.13.3" },
+  "build": {
+    "appId": "com.dropbridge.desktop",
+    "productName": "DropBridge",
+    "files": ["main.js", "server.js", "public/**", "build/icon.png"],
+    "win": { "target": ["nsis", "portable"], "icon": "build/icon.png" },
+    "nsis": { "oneClick": true, "perMachine": false, "artifactName": "DropBridge-Setup.${ext}" },
+    "portable": { "artifactName": "DropBridge-Portable.${ext}" }
+  }
+}

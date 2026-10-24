@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>DropBridge</title>
+<link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon.svg"><meta name="theme-color" content="#eceef1">
+<style>
+:root{--bg:#eceef1;--c:#f8f9fa;--t:#1f2328;--m:#6a7280;--a:#2f6bff;--b:#d6d9df}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1e22;--c:#25282d;--t:#e6e8eb;--m:#8d94a0;--b:#363a41}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--t)}
+#app{display:flex;min-height:100vh;gap:16px;padding:16px;max-width:1100px;margin:0 auto}
+aside{width:290px;flex:none}main{flex:1;min-width:0}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:16px}
+h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:0 0 10px}.m{color:var(--m);font-size:13px}
+#qr{background:#fff;border-radius:8px;padding:10px;width:200px;height:200px;margin:12px auto}#qr svg{width:100%;height:100%;display:block}
+#link{display:block;word-break:break-all;text-align:center;font-size:13px;color:var(--a);cursor:pointer;margin-bottom:8px}
+select{width:100%;background:var(--bg);color:var(--t);border:1px solid var(--b);border-radius:8px;padding:7px;font:inherit;margin-top:6px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--b)}
+.tg{width:42px;height:24px;border-radius:12px;background:var(--b);position:relative;cursor:pointer;flex:none;transition:.15s}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+.tg.on{background:var(--a)}.tg.on::after{left:21px}
+#zone{border:2px dashed var(--b);border-radius:12px;padding:34px 16px;text-align:center;cursor:pointer;color:var(--m)}
+#zone b{color:var(--t);display:block;font-size:16px;margin-bottom:4px}#zone.over{border-color:var(--a);background:color-mix(in srgb,var(--a) 10%,transparent);color:var(--a)}
+.compose{display:flex;gap:8px;margin-top:12px}
+textarea{flex:1;min-height:46px;height:46px;background:var(--c);color:var(--t);border:1px solid var(--b);border-radius:10px;padding:12px;font:inherit;resize:vertical;outline:0}
+textarea:focus{border-color:var(--a)}
+button{background:var(--a);color:#fff;border:0;border-radius:10px;padding:0 18px;font:inherit;cursor:pointer;min-height:40px}
+button.g{background:transparent;color:var(--t);border:1px solid var(--b);min-height:0;padding:4px 10px;font-size:12px;border-radius:8px}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
+.item{margin-top:10px;background:var(--c);border:1px solid var(--b);border-radius:12px;padding:12px;word-break:break-word}
+.item pre{margin:0;white-space:pre-wrap;font:inherit}.item a{color:var(--a)}
+.meta{color:var(--m);font-size:12px;margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.meta .sp{flex:1}
+img,video{max-width:100%;max-height:420px;border-radius:8px;display:block}audio{width:100%}
+#gate{max-width:340px;margin:22vh auto;text-align:center;padding:0 16px}#prog{margin-top:8px}
+@media(max-width:760px){#app{flex-direction:column;padding:12px}aside{width:auto}}
+</style></head><body>
+<div id="gate" hidden><h1>DropBridge</h1><p class="m">Not connected. On your PC, open DropBridge and scan the QR code with your phone camera.</p><button id="rs2" hidden style="margin-top:8px">Scan QR</button></div>
+<div id="app" hidden>
+<aside id="side" hidden><div class="card">
+ <h1>Connect a phone</h1><div class="m" id="hint">Scan with your phone camera.</div>
+ <div id="qr"></div><a id="link"></a>
+ <select id="net" hidden></select>
+ <div class="sw"><div><h2 style="margin:0">Share outside this network</h2><div class="m" id="tstat">Off. Works only on same Wi-Fi or hotspot.</div></div><div class="tg" id="tg"></div></div>
+</div></aside>
+<main>
+ <div class="top"><div><h1>DropBridge</h1><div class="m" id="who"></div></div><div><button class="g" id="rescan" hidden>Change PC</button> <button class="g" id="clr">Clear all</button></div></div>
+ <div id="zone"><b>Drop files here</b><span id="zt">or click to choose photos, videos and files</span></div>
+ <input id="f" type="file" multiple hidden>
+ <div class="compose"><textarea id="t" placeholder="Paste a link or type text"></textarea><button id="send">Send</button></div>
+ <div id="prog" class="m"></div><div id="list"></div>
+</main></div>
+<script src="/qr.js"></script>
+<script>
+const $=s=>document.querySelector(s);let last='',info={},sel=0,lastQr='';
+const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(_){}};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
+async function api(p,o){const r=await fetch(p,o);if(r.status==401){$('#gate').hidden=false;$('#app').hidden=true;throw 0}return r}
+const fmt=n=>n>1e6?(n/1e6).toFixed(1)+' MB':Math.max(1,Math.ceil(n/1e3))+' KB';
+function copy(s){return navigator.clipboard?navigator.clipboard.writeText(s):new Promise(ok=>{const a=document.createElement('textarea');a.value=s;document.body.append(a);a.select();document.execCommand('copy');a.remove();ok()})}
+async function sendText(){const v=$('#t').value;if(!v.trim())return;await api('/api/text',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:v})});$('#t').value='';load()}
+function upload(file){return new Promise(ok=>{const x=new XMLHttpRequest();x.open('POST','/api/upload');
+ x.setRequestHeader('x-filename',encodeURIComponent(file.name||'pasted-'+Date.now()+'.png'));x.setRequestHeader('content-type',file.type||'application/octet-stream');
+ x.upload.onprogress=e=>$('#prog').textContent=`Sending ${file.name||'file'}  ${Math.round(e.loaded/e.total*100)}%`;
+ x.onload=x.onerror=()=>{$('#prog').textContent='';ok()};x.send(file)})}
+async function sendFiles(fl){for(const f of [...fl])await upload(f);load()}
+$('#send').onclick=sendText;$('#t').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter')sendText()};
+$('#zone').onclick=()=>$('#f').click();$('#f').onchange=e=>{sendFiles(e.target.files);e.target.value=''};
+$('#clr').onclick=async()=>{if(confirm('Delete everything shared so far?')){await api('/api/items',{method:'DELETE'});load()}};
+addEventListener('paste',e=>{const fs=[...e.clipboardData.files];if(fs.length){e.preventDefault();sendFiles(fs)}});
+addEventListener('dragover',e=>{e.preventDefault();$('#zone').classList.add('over')});
+addEventListener('dragleave',e=>{if(!e.relatedTarget)$('#zone').classList.remove('over')});
+addEventListener('drop',e=>{e.preventDefault();$('#zone').classList.remove('over');sendFiles(e.dataTransfer.files)});
+function linkify(s){const f=document.createDocumentFragment();let i=0;
+ for(const m of s.matchAll(/https?:\/\/[^\s<>"]+/g)){f.append(s.slice(i,m.index));const a=document.createElement('a');a.href=m[0];a.textContent=m[0];a.target='_blank';a.rel='noopener';f.append(a);i=m.index+m[0].length}
+ f.append(s.slice(i));return f}
+function btn(l,fn){const b=document.createElement('button');b.className='g';b.textContent=l;b.onclick=fn;return b}
+function card(it){const d=document.createElement('div');d.className='item';const m=document.createElement('div');m.className='meta';
+ m.append((it.from||'')+' · '+new Date(it.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));const sp=document.createElement('span');sp.className='sp';m.append(sp);
+ if(it.kind==='text'){const p=document.createElement('pre');p.append(linkify(it.text));d.append(p);
+  m.append(btn('Copy',async e=>{await copy(it.text);e.target.textContent='Copied'}));
+  if(/^https?:\/\/\S+$/.test(it.text))m.append(btn('Open',()=>open(it.text,'_blank')))}
+ else{const u='/f/'+it.id;
+  if(it.mime.startsWith('image/')){const i=document.createElement('img');i.src=u;i.loading='lazy';d.append(i)}
+  else if(it.mime.startsWith('video/')){const v=document.createElement('video');v.src=u;v.controls=true;v.preload='metadata';d.append(v)}
+  else if(it.mime.startsWith('audio/')){const v=document.createElement('audio');v.src=u;v.controls=true;d.append(v)}
+  const n=document.createElement('div');n.textContent=it.name+'  ·  '+fmt(it.size);n.className='m';n.style.marginTop='8px';d.append(n);
+  const a=document.createElement('a');a.href=u+'?dl';a.download=it.name;a.append(btn('Save',()=>{}));m.append(a)}
+ m.append(btn('Delete',async()=>{await api('/api/items/'+it.id,{method:'DELETE'});load()}));d.append(m);return d}
+async function load(){try{const r=await api('/api/items'),txt=await r.text();$('#app').hidden=false;$('#gate').hidden=true;
+ if(txt===last)return;last=txt;$('#list').replaceChildren(...JSON.parse(txt).map(card))}catch(_){}}
+function drawQr(url){if(url===lastQr)return;lastQr=url;const q=qrcode(0,'M');q.addData(url);q.make();$('#qr').innerHTML=q.createSvgTag({scalable:true,margin:0})}
+async function loadInfo(){try{info=await(await api('/api/info')).json();
+ const touch=!info.local;$('#zt').textContent=touch?'Tap to choose photos, videos and files':'or click to choose photos, videos and files';
+ $('#zone b').textContent=touch?'Send files':'Drop files here';
+ if(!info.local){$('#side').hidden=true;$('#who').textContent='Connected to your PC';return}
+ $('#side').hidden=false;$('#who').textContent='This PC';
+ const online=info.tun.state==='on',net=$('#net'),opts=info.ips.map(i=>`${i.ip}  (${i.name})`);
+ if(net.dataset.o!==opts.join('|')){net.dataset.o=opts.join('|');net.replaceChildren(...opts.map((o,i)=>new Option(o,i)));sel=Math.min(+ls('net')||0,opts.length-1);net.value=sel}
+ net.hidden=opts.length<2||online;
+ let url='';
+ if(online)url=info.tun.url+'/?k='+info.token;else if(info.ips.length)url=`http://${info.ips[Math.max(sel,0)].ip}:${info.port}/?k=${info.token}`;
+ $('#qr').style.opacity=url?1:.2;
+ if(url){drawQr(url);$('#link').textContent=url.replace('/?k='+info.token,'');$('#link').onclick=()=>copy(url);$('#hint').textContent=online?'Online link. Works from any network.':'Scan with your phone camera. Same Wi-Fi or hotspot.'}
+ else{$('#link').textContent='';$('#hint').textContent='No network found. Connect to Wi-Fi or turn on your hotspot.'}
+ $('#tg').classList.toggle('on',online||info.tun.state==='starting');
+ $('#tstat').textContent={off:'Off. Works only on same Wi-Fi or hotspot.',starting:'Going online...',on:'On. Anyone with this link and code can connect.',error:info.tun.msg}[info.tun.state]}catch(_){}}
+$('#net').onchange=e=>{sel=+e.target.value;ls('net',sel);loadInfo()};
+$('#tg').onclick=async()=>{const on=info.tun.state==='off'||info.tun.state==='error';await api('/api/tunnel',{method:'POST',body:JSON.stringify({on})});loadInfo()};
+if(window.DropBridgeApp){for(const i of["#rescan","#rs2"]){$(i).hidden=false;$(i).onclick=()=>DropBridgeApp.rescan()}}
+load();loadInfo();setInterval(()=>document.hidden||load(),2500);setInterval(()=>document.hidden||loadInfo(),3000);
+</script></body></html>

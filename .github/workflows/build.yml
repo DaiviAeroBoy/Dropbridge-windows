@@ -1,0 +1,31 @@
+name: Build Windows app
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DropBridge-windows
+          path: |
+            dist/DropBridge-Setup.exe
+            dist/DropBridge-Portable.exe
+      - name: Publish to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-latest
+          name: DropBridge for Windows (latest build)
+          files: |
+            dist/DropBridge-Setup.exe
+            dist/DropBridge-Portable.exe
