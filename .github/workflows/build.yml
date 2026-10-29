@@ -1,4 +1,4 @@
-name: Build Windows app
+name: Build Windows app and release
 on:
   push:
     branches: [main, master]
@@ -26,6 +26,7 @@ jobs:
         with:
           tag_name: windows-latest
           name: DropBridge for Windows (latest build)
+          body: Build #${{ github.run_number }}.
           files: |
             dist/DropBridge-Setup.exe
             dist/DropBridge-Portable.exe

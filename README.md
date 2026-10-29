@@ -12,3 +12,11 @@
 Closing the window keeps DropBridge running in the system tray. Right-click the tray icon to quit or start with Windows.
 
 Run from source instead: npm install, then npm start.
+
+## Share anywhere (online sessions via Filebin)
+Switch on "Share anywhere (online)" in the sidebar. DropBridge creates one session = one Filebin bin and shows its QR/link.
+Scan it with the DropBridge Android app from any network. A normal camera just opens the files on filebin.net.
+Files are kept on filebin.net for about 7 days and anyone with the link can see them. Switching it off deletes the bin.
+Needs internet on both devices. Text/links are stored as small .txt files in the bin.
+
+Every push to GitHub builds both .exe files automatically and refreshes the Release.

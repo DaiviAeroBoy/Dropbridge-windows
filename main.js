@@ -23,7 +23,7 @@ else {
     require('./server.js');
 
     const url = 'http://localhost:' + port;
-    win = new BrowserWindow({ width: 1000, height: 720, minWidth: 420, backgroundColor: '#ECEEF1', autoHideMenuBar: true, icon, title: 'DropBridge' });
+    win = new BrowserWindow({ width: 1000, height: 720, minWidth: 420, backgroundColor: '#F4F7FC', autoHideMenuBar: true, icon, title: 'DropBridge' });
     win.webContents.on('did-fail-load', () => setTimeout(() => win.loadURL(url), 300));
     win.webContents.setWindowOpenHandler(({ url: u }) => { shell.openExternal(u); return { action: 'deny' }; });
     win.webContents.on('will-navigate', (e, u) => { if (!u.startsWith(url)) { e.preventDefault(); shell.openExternal(u); } });
